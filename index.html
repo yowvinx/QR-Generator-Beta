@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Generator - Tailwind Pro Edition</title>
+
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/yowvinx/qr-assets/refs/heads/main/flash.png">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- QRCodeStyling.js -->
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+
+  <style>
+    /* ✨ Animasi ringan */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.6s ease-out; }
+
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .shimmer {
+      background: linear-gradient(to right, #f0f0f0 8%, #e0e0e0 18%, #f0f0f0 33%);
+      background-size: 800px 104px;
+      animation: shimmer 1.2s infinite linear;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-indigo-50 to-blue-100 min-h-screen flex flex-col items-center">
+
+  <header class="w-full bg-indigo-600 text-white py-4 shadow-lg">
+    <h1 class="text-2xl font-semibold text-center">🧩 QR Generator Beta</h1>
+    <p class="text-center text-sm opacity-90">Generate QR Code + Short Link otomatis</p>
+  </header>
+
+  <main class="flex-1 w-full max-w-4xl mt-8 bg-white rounded-2xl shadow-xl p-9 mx-5">
+    <div class="space-y-4">
+      <div>
+        <label class="block font-medium text-gray-700 mb-1">URL Prefix (opsional)</label>
+        <input id="prefix" type="text" placeholder="https://ws-electric.com/item"
+               class="w-full border border-gray-300 rounded-xl p-2 focus:ring-2 focus:ring-indigo-400 outline-none">
+      </div>
+
+      <div>
+        <label class="block font-medium text-gray-700 mb-1">Daftar Serial / URL (satu per baris)</label>
+        <textarea id="items" rows="6" placeholder="Masukkan data di sini..."
+                  class="w-full border border-gray-300 rounded-xl p-2 focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
+      </div>
+
+      <div class="flex justify-center">
+        <button id="gen"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-xl shadow transition">
+          Generate QR Code
+        </button>
+      </div>
+    </div>
+
+    <hr class="my-6 border-gray-200">
+
+    <div id="results" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </main>
+
+  <footer class="w-full text-center py-4 text-gray-500 text-sm">
+    © 2025 QR Generator by <span class="text-indigo-600 font-semibold">Workshop Electric</span>
+  </footer>
+
+  <script>
+    const defaultLogo = "https://raw.githubusercontent.com/yowvinx/qr-assets/refs/heads/main/logo-kpi.png"; // Logo default
+    const BITLY_TOKEN = "7f3f19125f0cba977dd9882f86155f7757dc10e4"; // simpan aman
+
+    async function shortenLink(longUrl) {
+      if (!BITLY_TOKEN) return longUrl;
+      try {
+        const res = await fetch("https://api-ssl.bitly.com/v4/shorten", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${BITLY_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ long_url: longUrl })
+        });
+        const data = await res.json();
+        return data.link || longUrl;
+      } catch (err) {
+        console.error("Bitly error:", err);
+        return longUrl;
+      }
+    }
+
+    document.getElementById('gen').addEventListener('click', async function () {
+      const prefix = document.getElementById('prefix').value.trim();
+      const items = document.getElementById('items').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const results = document.getElementById('results');
+      results.innerHTML = '';
+
+      if (items.length === 0) {
+        alert('Masukkan minimal satu baris teks atau URL!');
+        return;
+      }
+
+      for (const item of items) {
+        const url = prefix ? prefix.replace(/\/+$/, '') + '/' + encodeURIComponent(item) : item;
+
+        // Placeholder shimmer
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-gray-200 rounded-2xl shadow p-4 flex flex-col items-center shimmer';
+        card.style.height = "300px";
+        results.appendChild(card);
+
+        let shortUrl;
+        try {
+          shortUrl = await shortenLink(url);
+        } catch {
+          shortUrl = url;
+        }
+
+        const qrWrapper = document.createElement('div');
+        const logo = new Image();
+        logo.crossOrigin = "anonymous";
+        logo.src = defaultLogo;
+
+        const qrCode = new QRCodeStyling({
+          width: 220,
+          height: 220,
+          data: url,
+          margin: 2,
+          image: logo.src,
+          dotsOptions: { color: "#1e3a8a", type: "rounded" },
+          backgroundOptions: { color: "#ffffff" },
+          imageOptions: { crossOrigin: "anonymous", margin: 8 }
+        });
+
+        // Hapus shimmer setelah QR selesai render
+        card.innerHTML = '';
+        card.classList.remove('shimmer');
+        card.classList.add('fade-in-up');
+
+        const title = document.createElement('p');
+        title.textContent = item;
+        title.className = 'font-medium text-gray-700 text-center mb-2 break-words';
+        card.appendChild(title);
+
+        await qrCode.append(qrWrapper);
+        card.appendChild(qrWrapper);
+
+        const linkEl = document.createElement('a');
+        linkEl.href = shortUrl;
+        linkEl.target = "_blank";
+        linkEl.textContent = shortUrl;
+        linkEl.className = 'text-sm text-indigo-600 hover:text-indigo-800 mt-2 break-all';
+        card.appendChild(linkEl);
+
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'flex gap-4 mt-3';
+
+        const btnPng = document.createElement('button');
+        btnPng.textContent = 'Download PNG';
+        btnPng.className = 'text-sm font-semibold text-indigo-600 hover:text-indigo-800';
+        btnPng.addEventListener('click', async () => {
+          const blob = await qrCode.getRawData("png");
+          const img = new Image();
+          img.src = URL.createObjectURL(blob);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const qrSize = 220;
+            const textHeight = 30;
+            canvas.width = qrSize;
+            canvas.height = qrSize + textHeight;
+
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+
+            ctx.font = "bold 14px Arial";
+            ctx.fillStyle = "#1e3a8a";
+            ctx.textAlign = "center";
+            ctx.fillText(shortUrl, qrSize / 2, qrSize + 20);
+
+            const link = document.createElement('a');
+            link.download = `${item}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+          };
+        });
+
+        const btnSvg = document.createElement('button');
+        btnSvg.textContent = 'Download SVG';
+        btnSvg.className = 'text-sm font-semibold text-indigo-600 hover:text-indigo-800';
+        btnSvg.addEventListener('click', async () => {
+          const svgBlob = await qrCode.getRawData("svg");
+          const svgText = await svgBlob.text();
+          const combinedSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="220" height="250">
+              <g transform="translate(0,0)">
+                ${svgText.replace(/<\?xml.*\?>|<!DOCTYPE[^>]*>/g, '')}
+              </g>
+              <text x="110" y="240" text-anchor="middle"
+                    font-family="Arial" font-size="14" font-weight="bold"
+                    fill="#1e3a8a">${shortUrl}</text>
+            </svg>
+          `;
+          const blob = new Blob([combinedSvg], { type: "image/svg+xml;charset=utf-8" });
+          const urlSvg = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = urlSvg;
+          link.download = `${item}.svg`;
+          link.click();
+        });
+
+        btnGroup.appendChild(btnPng);
+        btnGroup.appendChild(btnSvg);
+        card.appendChild(btnGroup);
+      }
+    });
+  </script>
+</body>
+</html>
