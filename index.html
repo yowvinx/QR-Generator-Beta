@@ -75,20 +75,24 @@
   <script>
     const defaultLogo = "https://raw.githubusercontent.com/yowvinx/qr-assets/refs/heads/main/logo-kpi.png"; // Logo default
 
-    // Ganti seluruh fungsi shortenLink() lama dengan ini
-async function shortenLink(longUrl) {
+  async function shortenLink(longUrl) {
+  const proxyUrl = "https://api.allorigins.win/get?url=";
+  const encodedUrl = encodeURIComponent(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+  
   try {
-    // kamu bisa pilih base API: 'https://is.gd' atau 'https://v.gd'
-    const baseApi = "https://is.gd";
-    const res = await fetch(`${baseApi}/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
-    if (!res.ok) throw new Error("Shortener error");
-    const shortUrl = await res.text();
-    return shortUrl.trim();
-  } catch (err) {
-    console.error("Shortener error:", err);
-    return longUrl; // fallback jika gagal
+    const res = await fetch(proxyUrl + encodedUrl);
+    const data = await res.json();
+    if (res.ok && data.contents) {
+      return data.contents.trim();
+    } else {
+      throw new Error("Failed to shorten link");
+    }
+  } catch (error) {
+    console.error("Shortener error:", error);
+    return longUrl; // fallback ke URL asli
   }
 }
+
     document.getElementById('gen').addEventListener('click', async function () {
       const prefix = document.getElementById('prefix').value.trim();
       const items = document.getElementById('items').value
@@ -222,4 +226,5 @@ async function shortenLink(longUrl) {
   </script>
 </body>
 </html>
+
 
