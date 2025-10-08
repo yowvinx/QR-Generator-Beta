@@ -76,19 +76,29 @@
     const defaultLogo = "https://raw.githubusercontent.com/yowvinx/qr-assets/refs/heads/main/logo-kpi.png"; // Logo default
 
   async function shortenLink(longUrl) {
-  const apiUrl = `https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`;
-  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+  const apiUrl = "https://api.tinyurl.com/create";
+  const token = "Umt4YiDYabnYe4FH6ALHDkU1KlNqkVmaFeYlR6LNuWvKWObHji4PmYB0mngQ"; // ← ganti dengan token kamu
 
   try {
-    const res = await fetch(proxy);
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        url: longUrl,
+        domain: "tinyurl.com"
+      })
+    });
+
+    if (!res.ok) throw new Error("TinyURL API gagal: " + res.status);
+
     const data = await res.json();
-    if (data && data.contents) {
-      return data.contents.trim();
-    } else {
-      throw new Error("No response from proxy");
-    }
+    return data.data.tiny_url || longUrl;
   } catch (err) {
-    console.error("Shortener error:", err);
+    console.error("TinyURL error:", err);
     return longUrl; // fallback ke URL asli
   }
 }
@@ -226,6 +236,7 @@
   </script>
 </body>
 </html>
+
 
 
 
