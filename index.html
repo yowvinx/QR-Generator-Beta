@@ -74,27 +74,21 @@
 
   <script>
     const defaultLogo = "https://raw.githubusercontent.com/yowvinx/qr-assets/refs/heads/main/logo-kpi.png"; // Logo default
-    const BITLY_TOKEN = "7f3f19125f0cba977dd9882f86155f7757dc10e4"; // simpan aman
 
-    async function shortenLink(longUrl) {
-      if (!BITLY_TOKEN) return longUrl;
-      try {
-        const res = await fetch("https://api-ssl.bitly.com/v4/shorten", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${BITLY_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ long_url: longUrl })
-        });
-        const data = await res.json();
-        return data.link || longUrl;
-      } catch (err) {
-        console.error("Bitly error:", err);
-        return longUrl;
-      }
-    }
-
+    // Ganti seluruh fungsi shortenLink() lama dengan ini
+async function shortenLink(longUrl) {
+  try {
+    // kamu bisa pilih base API: 'https://is.gd' atau 'https://v.gd'
+    const baseApi = "https://is.gd";
+    const res = await fetch(`${baseApi}/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+    if (!res.ok) throw new Error("Shortener error");
+    const shortUrl = await res.text();
+    return shortUrl.trim();
+  } catch (err) {
+    console.error("Shortener error:", err);
+    return longUrl; // fallback jika gagal
+  }
+}
     document.getElementById('gen').addEventListener('click', async function () {
       const prefix = document.getElementById('prefix').value.trim();
       const items = document.getElementById('items').value
@@ -228,3 +222,4 @@
   </script>
 </body>
 </html>
+
