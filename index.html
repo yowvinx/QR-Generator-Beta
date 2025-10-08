@@ -76,19 +76,19 @@
     const defaultLogo = "https://raw.githubusercontent.com/yowvinx/qr-assets/refs/heads/main/logo-kpi.png"; // Logo default
 
   async function shortenLink(longUrl) {
-  const proxyUrl = "https://api.allorigins.win/get?url=";
-  const encodedUrl = encodeURIComponent(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
-  
+  const apiUrl = `https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`;
+  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+
   try {
-    const res = await fetch(proxyUrl + encodedUrl);
+    const res = await fetch(proxy);
     const data = await res.json();
-    if (res.ok && data.contents) {
+    if (data && data.contents) {
       return data.contents.trim();
     } else {
-      throw new Error("Failed to shorten link");
+      throw new Error("No response from proxy");
     }
-  } catch (error) {
-    console.error("Shortener error:", error);
+  } catch (err) {
+    console.error("Shortener error:", err);
     return longUrl; // fallback ke URL asli
   }
 }
@@ -226,5 +226,6 @@
   </script>
 </body>
 </html>
+
 
 
